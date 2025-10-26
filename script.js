@@ -1,5 +1,6 @@
+// --- Sélecteurs ---
 const jalonsList = document.getElementById("jalonsList");
-const messagesTable = document.querySelector("#messagesTable tbody");
+const messagesTableBody = document.querySelector("#messagesTable tbody");
 const rdvList = document.getElementById("rdvList");
 const autresList = document.getElementById("autresList");
 const uploadJson = document.getElementById("uploadJson");
@@ -9,7 +10,7 @@ const uploadStatus = document.getElementById("uploadStatus");
 const generateMailBtn = document.getElementById("generateMailBtn");
 const mailPromptSelect = document.getElementById("mailPromptSelect");
 
-// Bibliothèque de prompts pour mails
+// --- Bibliothèque de prompts pour mails ---
 const mailPrompts = {
   1: "Écris un email professionnel clair et concis pour :",
   2: "Écris un email amical et léger pour :"
@@ -17,99 +18,118 @@ const mailPrompts = {
 
 let llmData = null;
 
-// --- Fonction render ---
+// --- Fonction render sécurisée ---
 function renderModules() {
+  console.log("Render modules avec llmData :", llmData);
+
   // --- Jalons ---
   jalonsList.innerHTML = "";
-  if(llmData?.jalons){
+  if (llmData?.jalons?.length) {
     llmData.jalons.forEach(j => {
       const li = document.createElement("li");
-      li.innerHTML = `<strong>${j.titre}</strong> (${j.datePrévue})`;
-      if(j.sousActions?.length){
+      li.innerHTML = `<strong>${j.titre}</strong> (${j.datePrévue || "N/A"})`;
+
+      if (j.sousActions?.length) {
         const subUl = document.createElement("ul");
         j.sousActions.forEach(s => {
           const subLi = document.createElement("li");
           const cb = document.createElement("input");
-          cb.type="checkbox";
-          cb.checked = s.statut==="fait";
-          cb.addEventListener("change", ()=> s.statut = cb.checked ? "fait":"à faire");
+          cb.type = "checkbox";
+          cb.checked = s.statut === "fait";
+          cb.addEventListener("change", () => s.statut = cb.checked ? "fait" : "à faire");
           subLi.appendChild(cb);
-          subLi.appendChild(document.createTextNode(s.texte));
+          subLi.appendChild(document.createTextNode(s.texte || "Sans texte"));
           subUl.appendChild(subLi);
         });
         li.appendChild(subUl);
       }
+
       jalonsList.appendChild(li);
     });
+  } else {
+    jalonsList.innerHTML = "<li>Aucun jalon à afficher</li>";
   }
 
   // --- Messages ---
-  messagesTable.innerHTML = "";
-  if(llmData?.messages){
-    llmData.messages.forEach((m,i)=>{
+  messagesTableBody.innerHTML = "";
+  if (llmData?.messages?.length) {
+    llmData.messages.forEach(m => {
       const tr = document.createElement("tr");
+
       const tdCheck = document.createElement("td");
       const cb = document.createElement("input");
-      cb.type="checkbox";
-      cb.checked = m.envoyé;
-      cb.addEventListener("change", ()=> m.envoyé = cb.checked);
+      cb.type = "checkbox";
+      cb.checked = m.envoyé || false;
+      cb.addEventListener("change", () => m.envoyé = cb.checked);
       tdCheck.appendChild(cb);
       tr.appendChild(tdCheck);
-      tr.appendChild(document.createElement("td")).textContent = m.destinataire;
-      tr.appendChild(document.createElement("td")).textContent = m.sujet;
-      tr.appendChild(document.createElement("td")).textContent = m.texte;
-      messagesTable.appendChild(tr);
+
+      tr.appendChild(document.createElement("td")).textContent = m.destinataire || "-";
+      tr.appendChild(document.createElement("td")).textContent = m.sujet || "-";
+      tr.appendChild(document.createElement("td")).textContent = m.texte || "-";
+
+      messagesTableBody.appendChild(tr);
     });
+  } else {
+    messagesTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center">Aucun message à afficher</td></tr>`;
   }
 
   // --- RDV ---
   rdvList.innerHTML = "";
-  if(llmData?.rdv){
-    llmData.rdv.forEach(r=>{
+  if (llmData?.rdv?.length) {
+    llmData.rdv.forEach(r => {
       const li = document.createElement("li");
-      li.innerHTML = `<strong>${r.titre}</strong> - ${r.date} (${r.durée}) - Participants: ${r.participants.join(", ")})`;
+      li.innerHTML = `<strong>${r.titre || "Sans titre"}</strong> - ${r.date || "N/A"} (${r.durée || "N/A"}) - Participants: ${(r.participants || []).join(", ")}`;
       rdvList.appendChild(li);
     });
+  } else {
+    rdvList.innerHTML = "<li>Aucun rendez-vous à afficher</li>";
   }
 
   // --- Autres ressources ---
   autresList.innerHTML = "";
-  if(llmData?.autresModules){
-    llmData.autresModules.forEach(m=>{
+  if (llmData?.autresModules?.length) {
+    llmData.autresModules.forEach(m => {
       const li = document.createElement("li");
-      li.innerHTML = `<strong>${m.titre}</strong>`;
-      if(m.items?.length){
+      li.innerHTML = `<strong>${m.titre || "Sans titre"}</strong>`;
+
+      if (m.items?.length) {
         const subUl = document.createElement("ul");
-        m.items.forEach(it=>{
+        m.items.forEach(it => {
           const subLi = document.createElement("li");
           const a = document.createElement("a");
-          a.href = it.lien;
-          a.textContent = it.nom;
-          a.target="_blank";
+          a.href = it.lien || "#";
+          a.textContent = it.nom || "Sans nom";
+          a.target = "_blank";
           subLi.appendChild(a);
           subUl.appendChild(subLi);
         });
         li.appendChild(subUl);
       }
+
       autresList.appendChild(li);
     });
+  } else {
+    autresList.innerHTML = "<li>Aucune ressource à afficher</li>";
   }
 }
 
 // --- Charger JSON ---
-loadBtn.addEventListener("click", ()=>{
+loadBtn.addEventListener("click", () => {
   const file = uploadJson.files[0];
-  if(!file){ 
+  if (!file) { 
     alert("Choisis un fichier JSON LLM !"); 
     return; 
   }
+
   const reader = new FileReader();
-  reader.onload = e=>{
-    try{
+  reader.onload = e => {
+    try {
       llmData = JSON.parse(e.target.result);
+      console.log("JSON chargé :", llmData);
       renderModules();
       uploadStatus.textContent = `Fichier "${file.name}" chargé avec succès !`;
-    }catch(err){ 
+    } catch (err) {
       console.error(err); 
       alert("Fichier JSON invalide !"); 
       uploadStatus.textContent = "";
@@ -120,9 +140,10 @@ loadBtn.addEventListener("click", ()=>{
 
 // --- Générer Mail GPT ---
 generateMailBtn.addEventListener("click", () => {
-  if(!llmData?.messages) return;
+  if (!llmData?.messages) return;
+
   const selectedMessages = llmData.messages.filter(m => m.envoyé);
-  if(selectedMessages.length === 0){
+  if (selectedMessages.length === 0) {
     alert("Coche au moins un message !");
     return;
   }
@@ -130,7 +151,10 @@ generateMailBtn.addEventListener("click", () => {
   const promptId = mailPromptSelect.value;
   const promptTexte = mailPrompts[promptId];
 
-  let content = selectedMessages.map(m => `À: ${m.destinataire}\nSujet: ${m.sujet}\nMessage: ${m.texte}`).join("\n\n");
+  const content = selectedMessages.map(m => 
+    `À: ${m.destinataire || "-"}\nSujet: ${m.sujet || "-"}\nMessage: ${m.texte || "-"}`
+  ).join("\n\n");
+
   const finalPrompt = `${promptTexte}\n\n${content}`;
 
   // Copier dans le presse-papiers
@@ -141,3 +165,14 @@ generateMailBtn.addEventListener("click", () => {
   // Ouvrir ChatGPT
   window.open("https://chatgpt.com/", "_blank");
 });
+
+// --- Test JSON minimal si besoin ---
+/*
+llmData = {
+  jalons: [{ titre: "Test jalon", datePrévue: "2025-10-26", sousActions: [{ texte: "Sous action 1", statut: "à faire" }] }],
+  messages: [{ destinataire: "ben@example.com", sujet: "Sujet test", texte: "Contenu test", envoyé: false }],
+  rdv: [{ titre: "RDV test", date: "2025-10-27", durée: "1h", participants: ["Ben"] }],
+  autresModules: [{ titre: "Ressource test", items: [{ nom: "Lien test", lien: "https://example.com" }] }]
+};
+renderModules();
+*/
