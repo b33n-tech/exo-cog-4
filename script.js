@@ -27,7 +27,7 @@ function renderModules() {
   if (llmData?.jalons?.length) {
     llmData.jalons.forEach(j => {
       const li = document.createElement("li");
-      li.innerHTML = `<strong>${j.titre}</strong> (${j.datePrévue || "N/A"})`;
+      li.innerHTML = `<strong>${j.titre || "Sans titre"}</strong> (${j.datePrévue || "N/A"})`;
 
       if (j.sousActions?.length) {
         const subUl = document.createElement("ul");
@@ -165,14 +165,3 @@ generateMailBtn.addEventListener("click", () => {
   // Ouvrir ChatGPT
   window.open("https://chatgpt.com/", "_blank");
 });
-
-// --- Test JSON minimal si besoin ---
-/*
-llmData = {
-  jalons: [{ titre: "Test jalon", datePrévue: "2025-10-26", sousActions: [{ texte: "Sous action 1", statut: "à faire" }] }],
-  messages: [{ destinataire: "ben@example.com", sujet: "Sujet test", texte: "Contenu test", envoyé: false }],
-  rdv: [{ titre: "RDV test", date: "2025-10-27", durée: "1h", participants: ["Ben"] }],
-  autresModules: [{ titre: "Ressource test", items: [{ nom: "Lien test", lien: "https://example.com" }] }]
-};
-renderModules();
-*/
